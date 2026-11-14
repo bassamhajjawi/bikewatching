@@ -20,21 +20,17 @@ header label {
   margin-left: auto;
 }
 
-header time,
-header em {
-  display: block;
-}
-
-header em {
-  color: gray;
-  font-style: italic;
-}
-
 #time-slider {
   width: 25em;
 }
 
 header time,
 header em {
+  display: block;
   text-align: right;
+}
+
+header em {
+  color: gray;
+  font-style: italic;
 }

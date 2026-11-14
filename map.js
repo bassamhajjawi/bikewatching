@@ -18,6 +18,14 @@ const svg = d3.select('#map').select('svg');
 let departuresByMinute = Array.from({ length: 1440 }, () => []);
 let arrivalsByMinute = Array.from({ length: 1440 }, () => []);
 
+// Map departure ratio (0–1) to just 3 values: 0, 0.5, 1
+let stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
+
+function departureRatio(d) {
+  if (d.totalTraffic === 0) return 0.5; // avoid dividing by 0
+  return stationFlow(d.departures / d.totalTraffic);
+}
+
 // Convert a station's lon/lat to pixel coordinates on the map
 function getCoords(station) {
   const point = new mapboxgl.LngLat(+station.lon, +station.lat);
@@ -136,13 +144,14 @@ map.on('load', async () => {
     .domain([0, d3.max(stations, (d) => d.totalTraffic)])
     .range([0, 25]);
 
-  // Circles sized by traffic, with tooltips
+  // Circles sized by traffic, colored by flow, with tooltips
   const circles = svg
     .selectAll('circle')
     .data(stations, (d) => d.short_name)
     .enter()
     .append('circle')
     .attr('r', (d) => radiusScale(d.totalTraffic))
+    .style('--departure-ratio', (d) => departureRatio(d))
     .each(function (d) {
       d3.select(this)
         .append('title')
@@ -182,7 +191,7 @@ map.on('load', async () => {
     updateScatterPlot(timeFilter);
   }
 
-  // Resize circles based on the selected time
+  // Resize and recolor circles based on the selected time
   function updateScatterPlot(timeFilter) {
     const filteredStations = computeStationTraffic(stations, timeFilter);
 
@@ -191,7 +200,8 @@ map.on('load', async () => {
     circles
       .data(filteredStations, (d) => d.short_name)
       .join('circle')
-      .attr('r', (d) => radiusScale(d.totalTraffic));
+      .attr('r', (d) => radiusScale(d.totalTraffic))
+      .style('--departure-ratio', (d) => departureRatio(d));
   }
 
   timeSlider.addEventListener('input', updateTimeDisplay);

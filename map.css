@@ -23,9 +23,39 @@ body {
   pointer-events: none;
 }
 
+#map svg circle,
+.legend > div {
+  --color-departures: steelblue;
+  --color-arrivals: darkorange;
+  --color: color-mix(
+    in oklch,
+    var(--color-departures) calc(100% * var(--departure-ratio)),
+    var(--color-arrivals)
+  );
+}
+
 #map svg circle {
-  fill: steelblue;
+  fill: var(--color);
   fill-opacity: 60%;
   stroke: white;
   pointer-events: auto;
 }
+
+/* Legend (Design 1: blocks) */
+.legend {
+  display: flex;
+  gap: 1px;
+  margin-block: 1em;
+  width: 100%;
+}
+
+.legend > div {
+  flex: 1;
+  background: var(--color);
+  color: white;
+  padding: 0.4em 1.5em;
+}
+
+.legend > div:nth-child(1) { text-align: left; }
+.legend > div:nth-child(2) { text-align: center; }
+.legend > div:nth-child(3) { text-align: right; }
