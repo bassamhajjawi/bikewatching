@@ -54,19 +54,51 @@ map.on('load', async () => {
   // Load station data
   const jsonData = await d3.json('https://dsc106.com/labs/lab07/data/bluebikes-stations.json');
   let stations = jsonData.data.stations;
-  console.log('Stations Array:', stations);
 
-  // One circle per station
+  // Step 4.1: load trip data
+  const trips = await d3.csv('https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv');
+
+  // Step 4.2: count departures and arrivals per station
+  const departures = d3.rollup(
+    trips,
+    (v) => v.length,
+    (d) => d.start_station_id,
+  );
+
+  const arrivals = d3.rollup(
+    trips,
+    (v) => v.length,
+    (d) => d.end_station_id,
+  );
+
+  stations = stations.map((station) => {
+    let id = station.short_name;
+    station.arrivals = arrivals.get(id) ?? 0;
+    station.departures = departures.get(id) ?? 0;
+    station.totalTraffic = station.arrivals + station.departures;
+    return station;
+  });
+
+  console.log('Stations with traffic:', stations);
+
+  // Step 4.3: sqrt scale so circle AREA matches traffic
+  const radiusScale = d3
+    .scaleSqrt()
+    .domain([0, d3.max(stations, (d) => d.totalTraffic)])
+    .range([0, 25]);
+
+  // Circles sized by traffic, with tooltips (Step 4.4)
   const circles = svg
     .selectAll('circle')
     .data(stations)
     .enter()
     .append('circle')
-    .attr('r', 5)
-    .attr('fill', 'steelblue')
-    .attr('stroke', 'white')
-    .attr('stroke-width', 1)
-    .attr('opacity', 0.8);
+    .attr('r', (d) => radiusScale(d.totalTraffic))
+    .each(function (d) {
+      d3.select(this)
+        .append('title')
+        .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
+    });
 
   // Move circles to match the map
   function updatePositions() {
